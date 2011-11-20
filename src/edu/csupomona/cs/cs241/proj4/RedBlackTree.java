@@ -7,11 +7,13 @@ public class RedBlackTree<K extends Comparable<K>, V> {
 
     private final boolean RED = true;
     private final boolean BLACK = false;
+    private Node<K,V> theNilLeaf; 
 
     private Node<K, V> root;
 
     public RedBlackTree() {
         root = null;
+        theNilLeaf = new Node<K, V>(BLACK, null, null, null, null, null);
     }
 
     public boolean add(K key, V value) {
@@ -21,9 +23,7 @@ public class RedBlackTree<K extends Comparable<K>, V> {
         }
 
         if (root == null) {
-            root = new Node<K, V>(BLACK, new Node<K, V>(BLACK, null, null,
-                    null, null, null), new Node<K, V>(BLACK, null, null, null,
-                    null, null), null, value, key);
+            root = new Node<K, V>(BLACK, theNilLeaf, theNilLeaf, null, value, key);
             root.getLeftChild().setParent(root);
             root.getRightChild().setParent(root);
             return true;
@@ -35,30 +35,16 @@ public class RedBlackTree<K extends Comparable<K>, V> {
 
         if (placeToAdd.getKey().compareTo(key) < 0) {
             System.out.println("add to right");
-            placeToAdd.getRightChild().setParent(null);
-            placeToAdd.setRightChild(new Node<K, V>(RED, new Node<K, V>(BLACK,
-                    null, null, null, null, null), new Node<K, V>(BLACK, null,
-                    null, null, null, null), placeToAdd, value, key));
-            placeToAdd.getRightChild().getRightChild()
-                    .setParent(placeToAdd.getRightChild());
-            placeToAdd.getRightChild().getLeftChild()
-                    .setParent(placeToAdd.getRightChild());
+            placeToAdd.setRightChild(new Node<K, V>(RED, theNilLeaf, theNilLeaf, placeToAdd, value, key));
             printTree();
             System.out.println("%%%%");
-             addBalance(placeToAdd.getRightChild());
+            addBalance(placeToAdd.getRightChild());
         } else {
             System.out.println("add to left");
-            placeToAdd.getLeftChild().setParent(null);
-            placeToAdd.setLeftChild(new Node<K, V>(RED, new Node<K, V>(BLACK,
-                    null, null, null, null, null), new Node<K, V>(BLACK, null,
-                    null, null, null, null), placeToAdd, value, key));
-            placeToAdd.getLeftChild().getRightChild()
-                    .setParent(placeToAdd.getLeftChild());
-            placeToAdd.getLeftChild().getLeftChild()
-                    .setParent(placeToAdd.getLeftChild());
+            placeToAdd.setLeftChild(new Node<K, V>(RED, theNilLeaf, theNilLeaf, placeToAdd, value, key));
             printTree();
             System.out.println("%%%%");
-             addBalance(placeToAdd.getLeftChild());
+            addBalance(placeToAdd.getLeftChild());
         }
 
         return false;
