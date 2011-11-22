@@ -102,7 +102,82 @@ public class RedBlackTree<K extends Comparable<K>, V> {
     }
 
     public V delete(K key) {
+
+        V returnValue;
+        // the tree is empty
+        if (root == null) {
+            return null;
+        }
+
+        // find node to be deleted
+        Node<K, V> toBeDeleted = traverseForDelete(key, root);
+
+        // if this is null the node we want to delete doesn't exists
+        if (toBeDeleted == null) {
+            return null;
+        }
+
+        returnValue = toBeDeleted.getValue();
+        // if the root is the only node
+        if (toBeDeleted == root && root.getRightChild() == theNilLeaf
+                && root.getLeftChild() == theNilLeaf) {
+            root = null;
+            return returnValue;
+        }
+
+        // this will tell if using the successor or predecessor
+        boolean successor = false;
+        Node<K, V> replaceNode;
+        if (toBeDeleted.getRightChild() == theNilLeaf
+                && toBeDeleted.getLeftChild() == theNilLeaf) {
+            replaceNode = toBeDeleted;
+        } else if (toBeDeleted.getLeftChild() == theNilLeaf) {
+            replaceNode = findInOrderSuccessor(toBeDeleted.getRightChild());
+            successor = true;
+        } else {
+            replaceNode = findInOrderPredecessor(toBeDeleted.getLeftChild());
+        }
+
+        // this should never happen because we know the node to be deleted
+        // exists
+        assert (replaceNode != null);
+        toBeDeleted.setMapping(replaceNode.getKey(), replaceNode.getValue());
+
+        if (replaceNode.isRed()) {
+
+            // if the node to be deleted is red than both of it's children
+            // must be leaves because at least one of it's children is a leaf
+            // otherwise it wouldn't be a successor or predecessor. Both child
+            // must leaves or it it would violate the black rule.
+            assert (replaceNode.getRightChild() == theNilLeaf && replaceNode
+                    .getLeftChild() == theNilLeaf);
+
+            if (successor) {
+                replaceNode.getParent().setLeftChild(theNilLeaf);
+            } else {
+                replaceNode.getParent().setRightChild(theNilLeaf);
+            }
+        } else {
+            if (successor) {
+
+                // if we have the successor to delete then the left child is
+                // definitely going to be a leaf
+                assert (replaceNode.getLeftChild() == theNilLeaf);
+                replaceNode.getParent().setLeftChild(
+                        replaceNode.getRightChild());
+            } else {
+
+                // if we have the predecessor to delete then the right child is
+                // definitely going to be a leaf
+                assert (replaceNode.getRightChild() == theNilLeaf);
+                replaceNode.getParent().setRightChild(theNilLeaf);
+            }
+
+            deleteBalance(replaceNode);
+        }
+
         return null;
+
     }
 
     public V lookup(K key) {
@@ -118,6 +193,31 @@ public class RedBlackTree<K extends Comparable<K>, V> {
      */
     public void printTree() {
         internalInOrderPrint(root, 0);
+    }
+
+    public void prettyPrint() {
+        ArrayList<Node<K, V>> visited = new ArrayList<Node<K, V>>();
+        ArrayList<Node<K, V>> queue = new ArrayList<Node<K, V>>();
+
+        queue.add(0, root);
+        Node<K, V> m = null;
+        while (!queue.isEmpty()) {
+
+            m = queue.remove(0);
+            Node<K, V> right = m.getRightChild();
+            Node<K, V> left = m.getLeftChild();
+            if (left != theNilLeaf && !queue.contains(left)
+                    && !visited.contains(left)) {
+                queue.add(queue.size(), left);
+            }
+            if (right != theNilLeaf && !queue.contains(right)
+                    && !visited.contains(right)) {
+                queue.add(queue.size(), right);
+            }
+            visited.add(m);
+            System.out.print(m.getKey() + " ");
+        }
+
     }
 
     /**
@@ -214,6 +314,10 @@ public class RedBlackTree<K extends Comparable<K>, V> {
             }
 
         }
+
+    }
+
+    private void deleteBalance(Node<K, V> node) {
 
     }
 
@@ -377,13 +481,13 @@ public class RedBlackTree<K extends Comparable<K>, V> {
         Node<K, V> right = startNode.getRightChild();
 
         // if both leave are null this is the place to add
-        if (left.getKey() == null && right.getKey() == null) {
+        if (left == theNilLeaf && right == theNilLeaf) {
             return startNode;
         }
 
         // if the left leaf is null we may add here or keep going on the right
         // path
-        if (left.getKey() == null && right.getKey() != null) {
+        if (left == theNilLeaf && right != theNilLeaf) {
 
             if (startNode.getKey().compareTo(key) > -1) {
                 return startNode;
@@ -395,7 +499,7 @@ public class RedBlackTree<K extends Comparable<K>, V> {
 
         // if the right leaf is null we may add here or keep going on the left
         // path
-        if (right.getKey() == null && left.getKey() != null) {
+        if (right == theNilLeaf && left != theNilLeaf) {
 
             if (startNode.getKey().compareTo(key) < 0) {
                 return startNode;
@@ -407,7 +511,7 @@ public class RedBlackTree<K extends Comparable<K>, V> {
 
         // if neither leaves are null then we check to see which way we should
         // go.
-        if (left.getKey() != null && right.getKey() != null) {
+        if (left != theNilLeaf && right != theNilLeaf) {
 
             if (startNode.getKey().compareTo(key) < 0) {
                 return traverseForAdd(key, right);
@@ -421,6 +525,44 @@ public class RedBlackTree<K extends Comparable<K>, V> {
         assert (false);
         return null;
 
+    }
+
+    private Node<K, V> traverseForDelete(K key, Node<K, V> startNode) {
+
+        if (startNode.getKey().compareTo(key) == 0) {
+            return startNode;
+        }
+
+        if (startNode.getKey().compareTo(key) < 0
+                && startNode.getRightChild() != theNilLeaf) {
+            return traverseForDelete(key, startNode.getRightChild());
+        }
+
+        if (startNode.getKey().compareTo(key) > -1
+                && startNode.getLeftChild() != theNilLeaf) {
+            return traverseForDelete(key, startNode.getLeftChild());
+        }
+        return null;
+    }
+
+    private Node<K, V> findInOrderPredecessor(Node<K, V> startNode) {
+
+        if (startNode.getRightChild() == theNilLeaf) {
+            return startNode;
+        }
+
+        findInOrderPredecessor(startNode.getLeftChild());
+        return findInOrderPredecessor(startNode.getRightChild());
+    }
+
+    private Node<K, V> findInOrderSuccessor(Node<K, V> startNode) {
+
+        if (startNode.getLeftChild() == theNilLeaf) {
+            return startNode;
+        }
+
+        findInOrderSuccessor(startNode.getRightChild());
+        return findInOrderSuccessor(startNode.getLeftChild());
     }
 
     /**
@@ -440,15 +582,20 @@ public class RedBlackTree<K extends Comparable<K>, V> {
             return;
         }
         internalInOrderPrint(start.getRightChild(), depth + 1);
+
         for (int i = 0; i < depth; i++) {
             System.out.print(" ");
+
         }
         if (start.isRed()) {
-            System.out.println(start.getKey() + " red");
+            System.out.println(start.getKey() + " Red");
+
         } else {
             System.out.println(start.getKey());
+
         }
         internalInOrderPrint(start.getLeftChild(), depth + 1);
 
     }
+
 }
