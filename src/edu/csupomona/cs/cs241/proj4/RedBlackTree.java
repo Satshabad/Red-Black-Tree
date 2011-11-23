@@ -131,20 +131,25 @@ public class RedBlackTree<K extends Comparable<K>, V> {
         if (toBeDeleted.getRightChild() == theNilLeaf
                 && toBeDeleted.getLeftChild() == theNilLeaf) {
             replaceNode = toBeDeleted;
-        } else if (toBeDeleted.getLeftChild() == theNilLeaf) {
-            replaceNode = findInOrderSuccessor(toBeDeleted.getRightChild());
+        } else if (toBeDeleted.getRightChild() != theNilLeaf) {
+            System.out.println("suc");
             successor = true;
+            replaceNode = findInOrderSuccessor(toBeDeleted.getRightChild());
+
         } else {
+            System.out.println("pred");
             replaceNode = findInOrderPredecessor(toBeDeleted.getLeftChild());
         }
 
+        System.out.println("in order " + replaceNode.getKey());
         // this should never happen because we know the node to be deleted
         // exists
         assert (replaceNode != null);
+
         toBeDeleted.setMapping(replaceNode.getKey(), replaceNode.getValue());
-
+        Node<K, V> nodeNeedingBalance;
         if (replaceNode.isRed()) {
-
+            System.out.println("the node we are removing is red");
             // if the node to be deleted is red than both of it's children
             // must be leaves because at least one of it's children is a leaf
             // otherwise it wouldn't be a successor or predecessor. Both child
@@ -152,31 +157,58 @@ public class RedBlackTree<K extends Comparable<K>, V> {
             assert (replaceNode.getRightChild() == theNilLeaf && replaceNode
                     .getLeftChild() == theNilLeaf);
 
-            if (successor) {
-                replaceNode.getParent().setLeftChild(theNilLeaf);
-            } else {
+            // replace the node to with a nil leaf
+            if (replaceNode.getParent().getRightChild() == replaceNode) {
                 replaceNode.getParent().setRightChild(theNilLeaf);
+            } else {
+                replaceNode.getParent().setLeftChild(theNilLeaf);
             }
+            return returnValue;
+
         } else {
+            System.out.println("the node we are removing is black");
             if (successor) {
 
                 // if we have the successor to delete then the left child is
                 // definitely going to be a leaf
                 assert (replaceNode.getLeftChild() == theNilLeaf);
-                replaceNode.getParent().setLeftChild(
-                        replaceNode.getRightChild());
+
+                // in some cases the in order successor will be a right child
+                // and in some it will be the left
+                if (replaceNode.getParent().getRightChild() == replaceNode) {
+                    replaceNode.getParent().setRightChild(
+                            replaceNode.getRightChild());
+                } else {
+                    replaceNode.getParent().setLeftChild(
+                            replaceNode.getRightChild());
+                }
+                replaceNode.getRightChild().setParent(replaceNode.getParent());
+                nodeNeedingBalance = replaceNode.getRightChild();
+                replaceNode.setRightChild(null);
+                replaceNode.setLeftChild(null);
+                replaceNode.setParent(null);
+
             } else {
 
                 // if we have the predecessor to delete then the right child is
                 // definitely going to be a leaf
                 assert (replaceNode.getRightChild() == theNilLeaf);
-                replaceNode.getParent().setRightChild(theNilLeaf);
+
+                replaceNode.getParent().setRightChild(
+                        replaceNode.getLeftChild());
+                replaceNode.getLeftChild().setParent(replaceNode.getParent());
+                nodeNeedingBalance = replaceNode.getLeftChild();
+
+                replaceNode.setRightChild(null);
+                replaceNode.setLeftChild(null);
+                replaceNode.setParent(null);
+
             }
 
-            deleteBalance(replaceNode);
+            deleteBalance(nodeNeedingBalance);
         }
 
-        return null;
+        return returnValue;
 
     }
 
@@ -545,24 +577,40 @@ public class RedBlackTree<K extends Comparable<K>, V> {
         return null;
     }
 
+    private Node<K, V> findInOrderSuccessor(Node<K, V> startNode) {
+        if (startNode.getLeftChild() == theNilLeaf) {
+            return startNode;
+        }
+
+        if (startNode.getLeftChild() != theNilLeaf) {
+            return findInOrderSuccessor(startNode.getLeftChild());
+        }
+        if (startNode.getRightChild() != theNilLeaf) {
+            return findInOrderSuccessor(startNode.getRightChild());
+        }
+
+        // we should never reach here
+        assert (false);
+        return null;
+    }
+
     private Node<K, V> findInOrderPredecessor(Node<K, V> startNode) {
 
         if (startNode.getRightChild() == theNilLeaf) {
             return startNode;
         }
 
-        findInOrderPredecessor(startNode.getLeftChild());
-        return findInOrderPredecessor(startNode.getRightChild());
-    }
-
-    private Node<K, V> findInOrderSuccessor(Node<K, V> startNode) {
-
-        if (startNode.getLeftChild() == theNilLeaf) {
-            return startNode;
+        if (startNode.getRightChild() != theNilLeaf) {
+            return findInOrderPredecessor(startNode.getRightChild());
         }
 
-        findInOrderSuccessor(startNode.getRightChild());
-        return findInOrderSuccessor(startNode.getLeftChild());
+        if (startNode.getLeftChild() != theNilLeaf) {
+            return findInOrderPredecessor(startNode.getLeftChild());
+        }
+
+        // we should never reach here
+        assert (false);
+        return null;
     }
 
     /**
