@@ -1,7 +1,6 @@
 package edu.csupomona.cs.cs241.proj4;
 
 import java.util.ArrayList;
-import java.util.Stack;
 
 /**
  * This class is a Red Black Tree.
@@ -14,6 +13,8 @@ import java.util.Stack;
  *            the values that the nodes hold.
  */
 public class RedBlackTree<K extends Comparable<K>, V> {
+
+    private int longestString;
 
     /**
      * The constant boolean for the color red
@@ -30,7 +31,7 @@ public class RedBlackTree<K extends Comparable<K>, V> {
     /**
      * A special node called the root
      */
-    private Node<K, V> root;
+    public Node<K, V> root;
 
     /**
      * Initializes a Red Black Tree
@@ -41,6 +42,7 @@ public class RedBlackTree<K extends Comparable<K>, V> {
     public RedBlackTree() {
         root = null;
         theNilLeaf = new Node<K, V>(BLACK, null, null, null, null, null);
+        longestString = 0;
     }
 
     /**
@@ -63,6 +65,10 @@ public class RedBlackTree<K extends Comparable<K>, V> {
             return false;
         }
 
+        if (key.toString().length() > longestString) {
+            longestString = key.toString().length();
+        }
+
         // special case when there is no root.
         if (root == null) {
             root = new Node<K, V>(BLACK, theNilLeaf, theNilLeaf, null, value,
@@ -74,7 +80,7 @@ public class RedBlackTree<K extends Comparable<K>, V> {
 
         // finds the node on which to add the new node
         Node<K, V> placeToAdd = traverseForAdd(key, root);
-        System.out.println("place to add: " + placeToAdd.getKey());
+        // System.out.println("place to add: " + placeToAdd.getKey());
 
         // the method traverseToAdd should never return null.
         assert (placeToAdd != null);
@@ -83,18 +89,18 @@ public class RedBlackTree<K extends Comparable<K>, V> {
         // equal to the left. Except now after adding we have to make sure that
         // the tree is still following it's conditions
         if (placeToAdd.getKey().compareTo(key) < 0) {
-            System.out.println("add to right");
+            // System.out.println("add to right");
             placeToAdd.setRightChild(new Node<K, V>(RED, theNilLeaf,
                     theNilLeaf, placeToAdd, value, key));
-            printTree();
-            System.out.println("%%%%");
+            // printTree();
+            // System.out.println("%%%%");
             addBalance(placeToAdd.getRightChild());
         } else {
-            System.out.println("add to left");
+            // System.out.println("add to left");
             placeToAdd.setLeftChild(new Node<K, V>(RED, theNilLeaf, theNilLeaf,
                     placeToAdd, value, key));
-            printTree();
-            System.out.println("%%%%");
+            // printTree();
+            // System.out.println("%%%%");
             addBalance(placeToAdd.getLeftChild());
         }
 
@@ -149,7 +155,7 @@ public class RedBlackTree<K extends Comparable<K>, V> {
         toBeDeleted.setMapping(replaceNode.getKey(), replaceNode.getValue());
         Node<K, V> nodeNeedingBalance;
         if (replaceNode.isRed()) {
-            System.out.println("the node we are removing is red");
+            // System.out.println("the node we are removing is red");
             // if the node to be deleted is red than both of it's children
             // must be leaves because at least one of it's children is a leaf
             // otherwise it wouldn't be a successor or predecessor. Both child
@@ -166,7 +172,7 @@ public class RedBlackTree<K extends Comparable<K>, V> {
             return returnValue;
 
         } else {
-            System.out.println("the node we are removing is black");
+            // System.out.println("the node we are removing is black");
             if (successor) {
 
                 // if we have the successor to delete then the left child is
@@ -194,18 +200,32 @@ public class RedBlackTree<K extends Comparable<K>, V> {
                 // definitely going to be a leaf
                 assert (replaceNode.getRightChild() == theNilLeaf);
 
-                replaceNode.getParent().setRightChild(
-                        replaceNode.getLeftChild());
+                // in some cases the in order pred will be a right child
+                // and in some it will be the left
+                if (replaceNode.getParent().getRightChild() == replaceNode) {
+                    replaceNode.getParent().setRightChild(
+                            replaceNode.getLeftChild());
+                } else {
+                    replaceNode.getParent().setLeftChild(
+                            replaceNode.getLeftChild());
+                }
                 replaceNode.getLeftChild().setParent(replaceNode.getParent());
                 nodeNeedingBalance = replaceNode.getLeftChild();
-
                 replaceNode.setRightChild(null);
                 replaceNode.setLeftChild(null);
                 replaceNode.setParent(null);
-
             }
 
-            deleteBalance(nodeNeedingBalance);
+            if (nodeNeedingBalance.isRed()) {
+                nodeNeedingBalance.setColor(BLACK);
+                System.out
+                        .println("case 0: child of replacer was red, replacer was black, repainted child black");
+            } else {
+                deleteBalance(nodeNeedingBalance);
+            }
+            System.out.println("BEFORE REBALANCE-------------------------");
+            printTree();
+
         }
 
         return returnValue;
@@ -228,26 +248,83 @@ public class RedBlackTree<K extends Comparable<K>, V> {
     }
 
     public void prettyPrint() {
-        ArrayList<Node<K, V>> visited = new ArrayList<Node<K, V>>();
-        ArrayList<Node<K, V>> queue = new ArrayList<Node<K, V>>();
+        ArrayList<DepthAndNode<K, V>> queue = new ArrayList<DepthAndNode<K, V>>();
+        int depth = 0;
+        int treeDepth = getTreeDepth(root);
+        int beginningSpaces = longestString + 2;
+        for (int i = 0; i < treeDepth - 2; i++) {
+            beginningSpaces = (beginningSpaces * 2) + longestString + 2;
+            System.out.println(beginningSpaces);
+        }
 
-        queue.add(0, root);
-        Node<K, V> m = null;
-        while (!queue.isEmpty()) {
+        int inBetweenSpaces = beginningSpaces;
+        System.out.println(beginningSpaces);
+        queue.add(0, new DepthAndNode<K, V>(depth, root));
+        DepthAndNode<K, V> m = null;
+        for (int i = 0; i < beginningSpaces; i++) {
+            System.out.print(" ");
+        }
 
+        while (depth < treeDepth) {
+
+            // System.out.println(queue.toString());
             m = queue.remove(0);
-            Node<K, V> right = m.getRightChild();
-            Node<K, V> left = m.getLeftChild();
-            if (left != theNilLeaf && !queue.contains(left)
-                    && !visited.contains(left)) {
-                queue.add(queue.size(), left);
+            if (m.getDepth() > depth) {
+                depth = m.getDepth();
+                if (!(depth < treeDepth)) {
+                    break;
+                }
+                System.out.println();
+                inBetweenSpaces = beginningSpaces;
+                beginningSpaces = ((beginningSpaces - (longestString + 2)) / 2);
+                for (int i = 0; i < beginningSpaces; i++) {
+                    System.out.print(" ");
+                }
+
             }
-            if (right != theNilLeaf && !queue.contains(right)
-                    && !visited.contains(right)) {
-                queue.add(queue.size(), right);
+
+            Node<K, V> right;
+            Node<K, V> left;
+            if (m.getNode() == null) {
+                right = null;
+                left = null;
+
+            } else {
+                right = m.getNode().getRightChild();
+                left = m.getNode().getLeftChild();
             }
-            visited.add(m);
-            System.out.print(m.getKey() + " ");
+
+            queue.add(queue.size(), new DepthAndNode<K, V>(depth + 1, left));
+
+            queue.add(queue.size(), new DepthAndNode<K, V>(depth + 1, right));
+
+            if (m.getNode() == null) {
+                for (int j = 0; j < longestString + 2; j++) {
+                    System.out.print(" ");
+                }
+            } else if (m.getNode() == theNilLeaf) {
+                for (int j = 0; j < longestString; j++) {
+                    System.out.print("N");
+                }
+                System.out.print(":B");
+            } else {
+                System.out.print(m.getNode().getKey());
+
+                for (int j = m.getNode().getKey().toString().length(); j < longestString; j++) {
+                    System.out.print("E");
+                }
+
+                if (m.getNode().isRed()) {
+                    System.out.print(":R");
+                } else {
+                    System.out.print(":B");
+                }
+            }
+
+            for (int k = 0; k < inBetweenSpaces; k++) {
+                System.out.print(" ");
+            }
+
         }
 
     }
@@ -266,7 +343,7 @@ public class RedBlackTree<K extends Comparable<K>, V> {
         // first case is when the root is not black. so color it black.
         if (currentNode == root) {
             currentNode.setColor(BLACK);
-            System.out.println("case 1");
+            // System.out.println("case 1");
             return;
         }
 
@@ -277,7 +354,7 @@ public class RedBlackTree<K extends Comparable<K>, V> {
 
         // if parent is black no problem.
         if (!parent.isRed()) {
-            System.out.println("case 2");
+            // System.out.println("case 2");
             return;
         }
         // The parent should always be red here
@@ -289,12 +366,12 @@ public class RedBlackTree<K extends Comparable<K>, V> {
         // if the uncle and parent are red, re-color both to black and re-color
         // gramp to red and call on gramp.
         if (uncle.isRed()) {
-            System.out.println("case 3");
+            // System.out.println("case 3");
             uncle.setColor(BLACK);
             parent.setColor(BLACK);
             grandparent.setColor(RED);
-            printTree();
-            System.out.println("%%%%");
+            // printTree();
+            // System.out.println("%%%%");
             addBalance(currentNode.getParent().getParent());
 
             // cases 4 and 5 involve rotations.
@@ -303,7 +380,7 @@ public class RedBlackTree<K extends Comparable<K>, V> {
             // case 4a and 4b simply set up for case 5a and 5b.
             if (parent.getRightChild() == currentNode
                     && grandparent.getLeftChild() == parent) {
-                System.out.println("case 4a");
+                // System.out.println("case 4a");
 
                 rotateLeft(parent);
 
@@ -311,12 +388,12 @@ public class RedBlackTree<K extends Comparable<K>, V> {
                 currentNode = currentNode.getLeftChild();
                 parent = currentNode.getParent();
                 grandparent = parent.getParent();
-                printTree();
-                System.out.println("%%%%");
+                // printTree();
+                // System.out.println("%%%%");
 
             } else if (parent.getLeftChild() == currentNode
                     && grandparent.getRightChild() == parent) {
-                System.out.println("case 4b");
+                // System.out.println("case 4b");
 
                 rotateRight(parent);
 
@@ -324,21 +401,21 @@ public class RedBlackTree<K extends Comparable<K>, V> {
                 currentNode = currentNode.getRightChild();
                 parent = currentNode.getParent();
                 grandparent = parent.getParent();
-                printTree();
-                System.out.println("%%%%");
+                // printTree();
+                // System.out.println("%%%%");
             }
 
             // if either of these cases occur then we are done
             if (parent.getLeftChild() == currentNode
                     && grandparent.getLeftChild() == parent) {
-                System.out.println("case 5a");
+                // System.out.println("case 5a");
                 rotateRight(grandparent);
                 grandparent.setColor(RED);
                 parent.setColor(BLACK);
 
             } else if (parent.getRightChild() == currentNode
                     && grandparent.getRightChild() == parent) {
-                System.out.println("case 5b");
+                // System.out.println("case 5b");
                 rotateLeft(grandparent);
                 grandparent.setColor(RED);
                 parent.setColor(BLACK);
@@ -350,7 +427,132 @@ public class RedBlackTree<K extends Comparable<K>, V> {
     }
 
     private void deleteBalance(Node<K, V> node) {
+        if (node == root) {
+            return;
+        }
 
+        Node<K, V> parent = node.getParent();
+        Node<K, V> sibling = getSibling(node);
+
+        // Case 2 the sibling is red
+        if (sibling.isRed()) {
+            System.out
+                    .println("Case 2: the sibling is RED, set sibling to BLACK "
+                            + "and parent to BLACK, rotate left if left child "
+                            + "rotate right if right child, n = "
+                            + node.getKey());
+            printTree();
+            System.out
+                    .println("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%");
+            sibling.setColor(BLACK);
+            parent.setColor(BLACK);
+
+            if (node == parent.getLeftChild()) {
+                rotateLeft(parent);
+            } else {
+                rotateRight(parent);
+            }
+            sibling = getSibling(node);
+            parent = node.getParent();
+        }
+
+        // Case 3 4 5 and 6
+        // the sibling is black
+        if (!sibling.isRed()) {
+
+            // Case 3
+            if (!sibling.getRightChild().isRed()
+                    && !sibling.getLeftChild().isRed()) {
+
+                if (!parent.isRed()) {
+                    System.out
+                            .println("Case 3: sibling is BLACK, sibling's chilren are BLACK, "
+                                    + "parent is BLACK. set sibling to RED and call again on parent, n = "
+                                    + node.getKey());
+                    sibling.setColor(RED);
+                    printTree();
+                    System.out
+                            .println("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%");
+                    deleteBalance(parent);
+                }
+
+                // Case 4
+                else {
+                    System.out
+                            .println("Case 3: sibling is BLACK, sibling's chilren are BLACK, "
+                                    + "parent is RED. set sibling to RED set parent to BLACK, n = "
+                                    + node.getKey());
+                    sibling.setColor(RED);
+                    parent.setColor(BLACK);
+                    printTree();
+                    System.out
+                            .println("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%");
+                    return;
+                }
+            }
+            // Sibling is still black but it's children aren't both black
+
+            // Case 5
+
+            if (node == parent.getLeftChild()
+                    && !sibling.getRightChild().isRed()
+                    && sibling.getLeftChild().isRed()) {
+                System.out
+                        .println("Case 5: sibling is BLACK, sib's right child is BLACK, "
+                                + "sib's left child is RED. set the sibling to RED, sib's left child to BLACK. rotate right in sib. n = "
+                                + node.getKey());
+
+                sibling.setColor(RED);
+                sibling.getLeftChild().setColor(BLACK);
+                rotateRight(sibling);
+                printTree();
+                System.out
+                        .println("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%");
+            } else if (node == parent.getRightChild()
+                    && !sibling.getLeftChild().isRed()
+                    && sibling.getRightChild().isRed()) {
+
+                System.out
+                        .println("Case 5: sibling is BLACK, sib's right child is RED, "
+                                + "sib's left child is BLACK. set the sibling to RED, sib's right child to BLACK. rotate left on sib. n = "
+                                + node.getKey());
+                sibling.setColor(RED);
+                sibling.getRightChild().setColor(BLACK);
+                rotateLeft(sibling);
+                printTree();
+                System.out
+                        .println("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%");
+            }
+            sibling = getSibling(node);
+            parent = node.getParent();
+            // Case 6
+            if (sibling.getRightChild().isRed()) {
+                sibling.setColor(parent.isRed());
+                parent.setColor(BLACK);
+                System.out.println("Case 6: n = " + node.getKey());
+                if (node == parent.getLeftChild()) {
+
+                    sibling.getRightChild().setColor(BLACK);
+                    rotateLeft(parent);
+                } else {
+                    sibling.getLeftChild().setColor(BLACK);
+                    rotateRight(parent);
+                }
+                printTree();
+                System.out
+                        .println("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%");
+            }
+
+        }
+
+    }
+
+    private Node<K, V> getSibling(Node<K, V> node) {
+        if (node.getParent().getRightChild() == node) {
+            return node.getParent().getLeftChild();
+        } else {
+            return node.getParent().getRightChild();
+        }
     }
 
     /**
@@ -646,4 +848,12 @@ public class RedBlackTree<K extends Comparable<K>, V> {
 
     }
 
+    public int getTreeDepth(Node<K, V> start) {
+
+        if (start == null) {
+            return 0;
+        }
+        return Math.max(getTreeDepth(start.getRightChild()) + 1,
+                getTreeDepth(start.getLeftChild()) + 1);
+    }
 }
