@@ -12,22 +12,34 @@ import java.util.ArrayList;
  * @param <V>
  *            the values that the nodes hold.
  */
+/**
+ * @author Satshabad
+ * 
+ * @param <K>
+ * @param <V>
+ */
 public class RedBlackTree<K extends Comparable<K>, V> {
 
+    /**
+     * This is the length of the longest string representation of the key
+     */
     private int longestString;
 
     /**
      * The constant boolean for the color red
      */
     private final boolean RED = true;
+
     /**
      * The constant boolean for the color black
      */
     private final boolean BLACK = false;
+
     /**
      * The one node that represents all of the nil leaves at once.
      */
     private Node<K, V> theNilLeaf;
+
     /**
      * A special node called the root
      */
@@ -80,7 +92,7 @@ public class RedBlackTree<K extends Comparable<K>, V> {
 
         // finds the node on which to add the new node
         Node<K, V> placeToAdd = traverseForAdd(key, root);
-        // System.out.println("place to add: " + placeToAdd.getKey());
+        
 
         // the method traverseToAdd should never return null.
         assert (placeToAdd != null);
@@ -89,26 +101,35 @@ public class RedBlackTree<K extends Comparable<K>, V> {
         // equal to the left. Except now after adding we have to make sure that
         // the tree is still following it's conditions
         if (placeToAdd.getKey().compareTo(key) < 0) {
-            // System.out.println("add to right");
+            
             placeToAdd.setRightChild(new Node<K, V>(RED, theNilLeaf,
                     theNilLeaf, placeToAdd, value, key));
-            // printTree();
-            // System.out.println("%%%%");
+           
+          
             addBalance(placeToAdd.getRightChild());
         } else {
-            // System.out.println("add to left");
+          
             placeToAdd.setLeftChild(new Node<K, V>(RED, theNilLeaf, theNilLeaf,
                     placeToAdd, value, key));
-            // printTree();
-            // System.out.println("%%%%");
+          
             addBalance(placeToAdd.getLeftChild());
         }
 
         return true;
     }
 
+    /**
+     * This method deletes the first instance of the key value mapping indicated
+     * by the key.
+     * 
+     * @post the mapping to be deleted is valid
+     * @post the first instance of the mapping is removes
+     * 
+     * @param key
+     *            the key to value to be deleted
+     * @return the value mapped to the key which was deleted
+     */
     public V delete(K key) {
-
         V returnValue;
         // the tree is empty
         if (root == null) {
@@ -116,7 +137,7 @@ public class RedBlackTree<K extends Comparable<K>, V> {
         }
 
         // find node to be deleted
-        Node<K, V> toBeDeleted = traverseForDelete(key, root);
+        Node<K, V> toBeDeleted = lookupHelper(key, root);
 
         // if this is null the node we want to delete doesn't exists
         if (toBeDeleted == null) {
@@ -138,24 +159,26 @@ public class RedBlackTree<K extends Comparable<K>, V> {
                 && toBeDeleted.getLeftChild() == theNilLeaf) {
             replaceNode = toBeDeleted;
         } else if (toBeDeleted.getRightChild() != theNilLeaf) {
-            System.out.println("suc");
+           
             successor = true;
             replaceNode = findInOrderSuccessor(toBeDeleted.getRightChild());
 
         } else {
-            System.out.println("pred");
+        
             replaceNode = findInOrderPredecessor(toBeDeleted.getLeftChild());
         }
 
-        System.out.println("in order " + replaceNode.getKey());
+    
+
         // this should never happen because we know the node to be deleted
         // exists
         assert (replaceNode != null);
 
         toBeDeleted.setMapping(replaceNode.getKey(), replaceNode.getValue());
+
         Node<K, V> nodeNeedingBalance;
         if (replaceNode.isRed()) {
-            // System.out.println("the node we are removing is red");
+          
             // if the node to be deleted is red than both of it's children
             // must be leaves because at least one of it's children is a leaf
             // otherwise it wouldn't be a successor or predecessor. Both child
@@ -172,9 +195,8 @@ public class RedBlackTree<K extends Comparable<K>, V> {
             return returnValue;
 
         } else {
-            // System.out.println("the node we are removing is black");
+          
             if (successor) {
-
                 // if we have the successor to delete then the left child is
                 // definitely going to be a leaf
                 assert (replaceNode.getLeftChild() == theNilLeaf);
@@ -189,7 +211,9 @@ public class RedBlackTree<K extends Comparable<K>, V> {
                             replaceNode.getRightChild());
                 }
                 replaceNode.getRightChild().setParent(replaceNode.getParent());
+
                 nodeNeedingBalance = replaceNode.getRightChild();
+
                 replaceNode.setRightChild(null);
                 replaceNode.setLeftChild(null);
                 replaceNode.setParent(null);
@@ -211,6 +235,13 @@ public class RedBlackTree<K extends Comparable<K>, V> {
                 }
                 replaceNode.getLeftChild().setParent(replaceNode.getParent());
                 nodeNeedingBalance = replaceNode.getLeftChild();
+
+                System.out.println(" n's parent's parent: "
+                        + nodeNeedingBalance.getParent().getParent());
+                System.out.println(" n's parent: "
+                        + nodeNeedingBalance.getParent());
+                System.out.println(" n:" + nodeNeedingBalance);
+
                 replaceNode.setRightChild(null);
                 replaceNode.setLeftChild(null);
                 replaceNode.setParent(null);
@@ -220,11 +251,17 @@ public class RedBlackTree<K extends Comparable<K>, V> {
                 nodeNeedingBalance.setColor(BLACK);
                 System.out
                         .println("case 0: child of replacer was red, replacer was black, repainted child black");
+                System.out.println(" n's parent's parent: "
+                        + nodeNeedingBalance.getParent().getParent());
+                System.out.println(" n's parent: "
+                        + nodeNeedingBalance.getParent());
+                System.out.println(" n:" + nodeNeedingBalance);
+
             } else {
                 deleteBalance(nodeNeedingBalance);
             }
             System.out.println("BEFORE REBALANCE-------------------------");
-            printTree();
+            prettyPrint();
 
         }
 
@@ -232,21 +269,39 @@ public class RedBlackTree<K extends Comparable<K>, V> {
 
     }
 
+    /**
+     * This method looks up the value associated with the key.
+     * 
+     * @pre the mapping must be valid
+     * @post the value mapped to the key is returned
+     * 
+     * @param key
+     *            the key of the value
+     * @return the value indexed by key
+     */
     public V lookup(K key) {
-        return null;
+        return lookupHelper(key, root).getValue();
 
     }
 
     /**
-     * This will print the tree sideways.
+     * This method helped me visualize the tree until I got pretty print working
      * 
      * @pre true
      * @post the tree is printed sideways
+     * @deprecated
      */
     public void printTree() {
         internalInOrderPrint(root, 0);
     }
 
+    /**
+     * This prints the tree in a readable format, regardless of key string
+     * length
+     * 
+     * @pre true
+     * @post the tree is printed
+     */
     public void prettyPrint() {
         ArrayList<DepthAndNode<K, V>> queue = new ArrayList<DepthAndNode<K, V>>();
         int depth = 0;
@@ -254,11 +309,9 @@ public class RedBlackTree<K extends Comparable<K>, V> {
         int beginningSpaces = longestString + 2;
         for (int i = 0; i < treeDepth - 2; i++) {
             beginningSpaces = (beginningSpaces * 2) + longestString + 2;
-            System.out.println(beginningSpaces);
         }
 
         int inBetweenSpaces = beginningSpaces;
-        System.out.println(beginningSpaces);
         queue.add(0, new DepthAndNode<K, V>(depth, root));
         DepthAndNode<K, V> m = null;
         for (int i = 0; i < beginningSpaces; i++) {
@@ -266,8 +319,6 @@ public class RedBlackTree<K extends Comparable<K>, V> {
         }
 
         while (depth < treeDepth) {
-
-            // System.out.println(queue.toString());
             m = queue.remove(0);
             if (m.getDepth() > depth) {
                 depth = m.getDepth();
@@ -326,7 +377,7 @@ public class RedBlackTree<K extends Comparable<K>, V> {
             }
 
         }
-
+        System.out.println();
     }
 
     /**
@@ -336,7 +387,7 @@ public class RedBlackTree<K extends Comparable<K>, V> {
      * @pre the only rules that are broken are from the latest add proc.
      * @post all 4 of the RBT rules are not violated
      * @param currentNode
-     *            the node to start cheking on
+     *            the node to start checking on
      */
     private void addBalance(Node<K, V> currentNode) {
 
@@ -426,14 +477,28 @@ public class RedBlackTree<K extends Comparable<K>, V> {
 
     }
 
+    /**
+     * This internal method will check the 5 cases that might occur when a node
+     * is deleted and it breaks the 4 RBT rules.
+     * 
+     * @pre the only rules that are broken are from the latest delete proc.
+     * @post all 4 of the RBT rules are not violated
+     * @param node
+     *            the node to start checking on
+     */
     private void deleteBalance(Node<K, V> node) {
+
         if (node == root) {
             return;
         }
-
         Node<K, V> parent = node.getParent();
-        Node<K, V> sibling = getSibling(node);
 
+        Node<K, V> sibling = getSibling(node);
+        if (sibling == theNilLeaf) {
+            return;
+        }
+        System.out.println("we's left child ="
+                + node.getParent().getLeftChild());
         // Case 2 the sibling is red
         if (sibling.isRed()) {
             System.out
@@ -441,7 +506,7 @@ public class RedBlackTree<K extends Comparable<K>, V> {
                             + "and parent to BLACK, rotate left if left child "
                             + "rotate right if right child, n = "
                             + node.getKey());
-            printTree();
+            prettyPrint();
             System.out
                     .println("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%");
             sibling.setColor(BLACK);
@@ -470,21 +535,21 @@ public class RedBlackTree<K extends Comparable<K>, V> {
                                     + "parent is BLACK. set sibling to RED and call again on parent, n = "
                                     + node.getKey());
                     sibling.setColor(RED);
-                    printTree();
+                    prettyPrint();
                     System.out
                             .println("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%");
                     deleteBalance(parent);
                 }
 
-                // Case 4
+                // Case 3
                 else {
                     System.out
-                            .println("Case 3: sibling is BLACK, sibling's chilren are BLACK, "
+                            .println("Case 4: sibling is BLACK, sibling's chilren are BLACK, "
                                     + "parent is RED. set sibling to RED set parent to BLACK, n = "
                                     + node.getKey());
                     sibling.setColor(RED);
                     parent.setColor(BLACK);
-                    printTree();
+                    prettyPrint();
                     System.out
                             .println("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%");
                     return;
@@ -505,7 +570,7 @@ public class RedBlackTree<K extends Comparable<K>, V> {
                 sibling.setColor(RED);
                 sibling.getLeftChild().setColor(BLACK);
                 rotateRight(sibling);
-                printTree();
+                prettyPrint();
                 System.out
                         .println("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%");
             } else if (node == parent.getRightChild()
@@ -519,26 +584,39 @@ public class RedBlackTree<K extends Comparable<K>, V> {
                 sibling.setColor(RED);
                 sibling.getRightChild().setColor(BLACK);
                 rotateLeft(sibling);
-                printTree();
+                prettyPrint();
                 System.out
                         .println("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%");
             }
+            if (node == theNilLeaf) {
+                node.setParent(parent);
+            }
             sibling = getSibling(node);
-            parent = node.getParent();
+            if (sibling == theNilLeaf) {
+                return;
+            }
             // Case 6
-            if (sibling.getRightChild().isRed()) {
-                sibling.setColor(parent.isRed());
-                parent.setColor(BLACK);
-                System.out.println("Case 6: n = " + node.getKey());
-                if (node == parent.getLeftChild()) {
+            if (node == parent.getLeftChild()
+                    && sibling.getRightChild().isRed()) {
+                boolean temp = parent.isRed();
+                parent.setColor(sibling.isRed());
+                sibling.setColor(temp);
 
-                    sibling.getRightChild().setColor(BLACK);
-                    rotateLeft(parent);
-                } else {
-                    sibling.getLeftChild().setColor(BLACK);
-                    rotateRight(parent);
-                }
-                printTree();
+                System.out.println("Case 6a: n = " + node.getKey());
+                sibling.getRightChild().setColor(BLACK);
+                rotateLeft(parent);
+                prettyPrint();
+                System.out
+                        .println("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%");
+            } else if (node == parent.getRightChild()
+                    && sibling.getLeftChild().isRed()) {
+                boolean temp = parent.isRed();
+                parent.setColor(sibling.isRed());
+                sibling.setColor(temp);
+                sibling.getLeftChild().setColor(BLACK);
+                rotateRight(parent);
+                System.out.println("Case 6b: n = " + node.getKey());
+                prettyPrint();
                 System.out
                         .println("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%");
             }
@@ -547,6 +625,16 @@ public class RedBlackTree<K extends Comparable<K>, V> {
 
     }
 
+    /**
+     * This method returns the sibling of the node
+     * 
+     * @pre the node is not the root, the node has a sibling
+     * @post the sibling is returned
+     * 
+     * @param node
+     *            the node of who's sibling is to be returned
+     * @return the sibling of node
+     */
     private Node<K, V> getSibling(Node<K, V> node) {
         if (node.getParent().getRightChild() == node) {
             return node.getParent().getLeftChild();
@@ -761,24 +849,44 @@ public class RedBlackTree<K extends Comparable<K>, V> {
 
     }
 
-    private Node<K, V> traverseForDelete(K key, Node<K, V> startNode) {
+    /**
+     * This method helps look up a node by key.
+     * 
+     * @pre the key is a valid mapping
+     * @post the node with the matching key is returned
+     * 
+     * @param key
+     *            the key of the node being looked for
+     * @param node
+     *            the node being looked at
+     * @return the node with the corresponding key if it exists, otherwise null
+     */
+    private Node<K, V> lookupHelper(K key, Node<K, V> node) {
 
-        if (startNode.getKey().compareTo(key) == 0) {
-            return startNode;
+        if (node.getKey().compareTo(key) == 0) {
+            return node;
         }
 
-        if (startNode.getKey().compareTo(key) < 0
-                && startNode.getRightChild() != theNilLeaf) {
-            return traverseForDelete(key, startNode.getRightChild());
+        if (node.getKey().compareTo(key) < 0
+                && node.getRightChild() != theNilLeaf) {
+            return lookupHelper(key, node.getRightChild());
         }
 
-        if (startNode.getKey().compareTo(key) > -1
-                && startNode.getLeftChild() != theNilLeaf) {
-            return traverseForDelete(key, startNode.getLeftChild());
+        if (node.getKey().compareTo(key) > -1
+                && node.getLeftChild() != theNilLeaf) {
+            return lookupHelper(key, node.getLeftChild());
         }
         return null;
     }
 
+    /**
+     * This method finds the in order successor of the subtree with startNode at
+     * the root
+     * 
+     * @param startNode
+     *            the root of the subtree
+     * @return the node that is the in order sucessor of startNode
+     */
     private Node<K, V> findInOrderSuccessor(Node<K, V> startNode) {
         if (startNode.getLeftChild() == theNilLeaf) {
             return startNode;
@@ -795,6 +903,15 @@ public class RedBlackTree<K extends Comparable<K>, V> {
         assert (false);
         return null;
     }
+
+    /**
+     * This method finds the in order predecessor of the subtree with startNode
+     * at the root
+     * 
+     * @param startNode
+     *            the root of the subtree
+     * @return the node that is the in order predecessor of startNode
+     */
 
     private Node<K, V> findInOrderPredecessor(Node<K, V> startNode) {
 
@@ -815,17 +932,6 @@ public class RedBlackTree<K extends Comparable<K>, V> {
         return null;
     }
 
-    /**
-     * This method can print any branch of the tree by doing an in-order
-     * traversal.
-     * 
-     * @pre true
-     * @post the branch is printed
-     * @param start
-     *            the node to start the tree with
-     * @param depth
-     *            the depth of the starting node
-     */
     private void internalInOrderPrint(Node<K, V> start, int depth) {
 
         if (start == null) {
@@ -848,12 +954,77 @@ public class RedBlackTree<K extends Comparable<K>, V> {
 
     }
 
-    public int getTreeDepth(Node<K, V> start) {
+    /**
+     * This method finds the depth of the tree starting at start
+     * 
+     * @pre true
+     * @post the tree is traversed and the depth is returned
+     * 
+     * @param start
+     *            the node to start the depth at
+     * @return the depth of the tree
+     */
+    private int getTreeDepth(Node<K, V> start) {
 
         if (start == null) {
             return 0;
         }
         return Math.max(getTreeDepth(start.getRightChild()) + 1,
                 getTreeDepth(start.getLeftChild()) + 1);
+
     }
+
+    /**
+     * This is a method I was working on to help verify the tree, I got it to
+     * catch red violations, but not black. Often it will throw a black
+     * violation even though there is none
+     * 
+     * @pre true
+     * @post false
+     * 
+     * @return the number of black nodes in any given path
+     */
+    public int verify() {
+        return verifyHelper(root, 1, false, -1);
+    }
+
+    /**
+     * This method does most of the logic of the verify method. see
+     * {@link #verify()}
+     * 
+     * @param node
+     *            the current node
+     * @param numofBlack
+     *            the number of black so far
+     * @param wasRed
+     *            if the previous node was red
+     * @param firstPathBlack
+     *            the length of the black path that is reached first
+     * @return the number of black nodes in any given path
+     */
+    private int verifyHelper(Node<K, V> node, int numofBlack, boolean wasRed,
+            int firstPathBlack) {
+
+        if (node == null) {
+
+            if (firstPathBlack == -1) {
+                firstPathBlack = numofBlack;
+            } else {
+                assert (numofBlack == firstPathBlack);
+            }
+            return firstPathBlack;
+        }
+        if (!node.isRed()) {
+            numofBlack++;
+        }
+        if (node.isRed()) {
+            assert (!wasRed);
+        }
+        verifyHelper(node.getRightChild(), numofBlack, node.isRed(),
+                firstPathBlack);
+        verifyHelper(node.getLeftChild(), numofBlack, node.isRed(),
+                firstPathBlack);
+        return numofBlack;
+    }
+
 }
