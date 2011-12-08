@@ -1,0 +1,1 @@
+This has been implemented generically contrary to project specifications. The pretty printing is implemented to print the keys of the nodes, which must implement to string. The value of the keys must also be comparable. Pretty printing however is designed to handle any length of string given.
